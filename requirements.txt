@@ -1,0 +1,39 @@
+# 智能体核心依赖
+langchain==0.0.300
+langchain-community==0.0.13
+langchain-core==0.1.22
+langchain-experimental==0.0.48
+
+# 嵌入模型
+sentence-transformers==2.2.2
+
+# 向量数据库
+chromadb==0.4.16
+faiss-cpu==1.7.4
+
+# 重排模型
+rank-bm25==0.2.2
+transformers==4.34.0
+
+# 工具依赖
+requests==2.31.0
+python-dotenv==1.0.0
+PyPDF2==3.0.1
+beautifulsoup4==4.12.2
+
+# 配置管理
+pydantic==2.4.2
+pydantic-settings==2.0.3
+
+# 文档生成
+markdown==3.4.4
+jinja2==3.1.2
+
+# 可视化
+mermaid==0.1.0
+
+# 语言模型接口
+openai==0.28.1
+
+# 内存管理
+pyyaml==6.0.1

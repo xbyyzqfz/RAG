@@ -1,0 +1,61 @@
+# 智能体基本配置
+agent:
+  name: "南大软件学院SE流程智能体"
+  description: "基于RAG技术的软件工程流程智能助手"
+  model: "gpt-4-turbo-preview"
+  temperature: 0.3
+
+# RAG配置
+rag:
+  # 嵌入模型配置
+  embedding:
+    model_name: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+    dimension: 384
+    batch_size: 32
+  
+  # 索引配置
+  index:
+    type: "hybrid"  # hybrid, vector, keyword
+    vector_store: "chromadb"
+    vector_index_params:
+      metric: "cosine"
+      hnsw_space: "cosine"
+      hnsw_num_workers: 4
+    keyword_index_params:
+      language: "chinese"
+  
+  # 检索配置
+  retrieval:
+    top_k: 10
+    hybrid_alpha: 0.7  # 0=纯关键词, 1=纯向量
+    rerank:
+      enabled: true
+      model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+      top_k: 5
+    filter:
+      enabled: true
+      threshold: 0.5
+
+# 工具配置
+tools:
+  enabled: true
+  list:
+    - "search"
+    - "code_interpreter"
+    - "document_generator"
+
+# 记忆配置
+memory:
+  long_term:
+    enabled: true
+    storage: "chromadb"
+    collection_name: "agent_memory"
+  short_term:
+    enabled: true
+    max_tokens: 10000
+
+# MCP配置
+mcp:
+  enabled: true
+  max_hops: 3
+  confidence_threshold: 0.8

@@ -1,0 +1,255 @@
+# 南大软件学院SE流程智能体DSL文件
+# 描述智能体的工作流程、组件和交互方式
+
+version: 1.0
+name: "SE流程智能体"
+description: "基于RAG技术的软件工程流程智能体"
+
+# 智能体组件
+components:
+  # RAG系统组件
+  - name: "rag_system"
+    type: "rag"
+    description: "RAG系统核心组件"
+    subcomponents:
+      - name: "embedding_model"
+        type: "embedding"
+        model: "paraphrase-multilingual-MiniLM-L12-v2"
+        description: "多语言嵌入模型"
+      
+      - name: "index"
+        type: "index"
+        description: "混合索引（向量+关键词）"
+        subcomponents:
+          - name: "vector_store"
+            type: "vector_db"
+            provider: "chroma"
+            description: "向量存储"
+          
+          - name: "keyword_index"
+            type: "keyword_index"
+            description: "关键词索引"
+      
+      - name: "retriever"
+        type: "retrieval"
+        description: "混合检索器"
+        strategies:
+          - name: "vector_retrieval"
+            weight: 0.7
+          - name: "keyword_retrieval"
+            weight: 0.3
+      
+      - name: "reranker"
+        type: "reranker"
+        model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+        description: "交叉编码器重排模型"
+      
+      - name: "mcp_processor"
+        type: "mcp"
+        enabled: true
+        num_queries: 3
+        description: "多跳检索处理器"
+  
+  # 智能体核心组件
+  - name: "se_agent"
+    type: "agent"
+    description: "SE流程智能体核心"
+    subcomponents:
+      - name: "llm"
+        type: "llm"
+        provider: "openai"
+        model: "gpt-3.5-turbo"
+        temperature: 0.3
+        description: "大语言模型"
+      
+      - name: "se_flow_manager"
+        type: "se_flow"
+        description: "软件工程流程管理器"
+        stages:
+          - "需求分析"
+          - "系统设计"
+          - "编码实现"
+          - "测试"
+          - "部署与维护"
+      
+      - name: "tool_manager"
+        type: "tool_manager"
+        description: "工具插件管理器"
+        tools:
+          - "code_reviewer"
+          - "document_generator"
+          - "flow_visualizer"
+          - "test_runner"
+      
+      - name: "memory_system"
+        type: "memory"
+        description: "记忆系统"
+        subcomponents:
+          - name: "short_term_memory"
+            type: "short_term"
+            capacity: 10
+            description: "短期记忆"
+          
+          - name: "long_term_memory"
+            type: "long_term"
+            storage: "json_file"
+            path: "memory.json"
+            description: "长期记忆"
+
+# 智能体工作流程
+workflows:
+  # 对话流程
+  - name: "对话流程"
+    description: "处理用户查询的完整流程"
+    steps:
+      - name: "用户输入"
+        type: "input"
+        source: "user"
+      
+      - name: "保存到短期记忆"
+        type: "memory_operation"
+        component: "memory_system.short_term_memory"
+        operation: "add"
+        inputs:
+          - "用户输入"
+      
+      - name: "从长期记忆检索"
+        type: "memory_operation"
+        component: "memory_system.long_term_memory"
+        operation: "search"
+        inputs:
+          - "用户输入"
+      
+      - name: "RAG检索"
+        type: "rag_operation"
+        component: "rag_system"
+        operation: "retrieve"
+        inputs:
+          - "用户输入"
+      
+      - name: "构建上下文"
+        type: "data_processing"
+        inputs:
+          - "从长期记忆检索"
+          - "RAG检索"
+      
+      - name: "生成回答"
+        type: "llm_operation"
+        component: "se_agent.llm"
+        operation: "generate"
+        inputs:
+          - "用户输入"
+          - "构建上下文"
+      
+      - name: "保存到长期记忆"
+        type: "memory_operation"
+        component: "memory_system.long_term_memory"
+        operation: "add"
+        inputs:
+          - "用户输入"
+          - "生成回答"
+      
+      - name: "输出回答"
+        type: "output"
+        target: "user"
+        inputs:
+          - "生成回答"
+  
+  # SE流程指导流程
+  - name: "SE流程指导"
+    description: "根据用户需求生成软件工程流程指导"
+    steps:
+      - name: "用户需求输入"
+        type: "input"
+        source: "user"
+      
+      - name: "分析需求"
+        type: "llm_operation"
+        component: "se_agent.llm"
+        operation: "analyze"
+        inputs:
+          - "用户需求输入"
+      
+      - name: "生成SE流程"
+        type: "se_flow_operation"
+        component: "se_agent.se_flow_manager"
+        operation: "generate_flow"
+        inputs:
+          - "分析需求"
+      
+      - name: "可视化流程"
+        type: "tool_operation"
+        component: "se_agent.tool_manager"
+        tool: "flow_visualizer"
+        inputs:
+          - "生成SE流程"
+      
+      - name: "输出流程指导"
+        type: "output"
+        target: "user"
+        inputs:
+          - "可视化流程"
+
+# 配置参数
+config:
+  rag:
+    embedding:
+      model_name: "paraphrase-multilingual-MiniLM-L12-v2"
+      device: "cpu"
+    
+    index:
+      type: "hybrid"
+      vector_store_path: "./chroma_db"
+    
+    retrieval:
+      type: "hybrid"
+      vector_weight: 0.7
+      keyword_weight: 0.3
+      top_k: 10
+    
+    reranker:
+      enabled: true
+      model_name: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+      top_k: 5
+    
+    mcp:
+      enabled: true
+      num_queries: 3
+  
+  agent:
+    model: "gpt-3.5-turbo"
+    temperature: 0.3
+  
+  memory:
+    short_term:
+      capacity: 10
+    
+    long_term:
+      file_path: "memory.json"
+
+# 输入输出格式
+io_formats:
+  input:
+    text:
+      type: "string"
+      description: "用户文本输入"
+    
+    file:
+      type: "file"
+      supported_formats: ["txt", "md", "pdf"]
+      description: "用户文件输入"
+  
+  output:
+    text:
+      type: "string"
+      description: "智能体文本输出"
+    
+    document:
+      type: "document"
+      supported_formats: ["txt", "md", "html"]
+      description: "智能体生成的文档"
+    
+    visualization:
+      type: "visualization"
+      supported_formats: ["mermaid", "png", "svg"]
+      description: "智能体生成的可视化内容"
